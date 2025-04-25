@@ -1,6 +1,19 @@
-import { promises as fs } from "fs";
+import { Dirent, promises as fs } from "fs";
 import * as path from "path";
 import readline from "readline";
+
+const fullPathToIgnore: string[] = [
+  'C:\\Users\\binel\\workspace\\experiments\\TS\\clean-modules'
+];
+
+const relativePathToIgnore: string[] = [
+  'git',
+  'dist',
+  'build',
+  'out',
+  'lib',
+  'test'
+];
 
 const paths: string[] = [];
 let globalTotal = 0;
@@ -30,21 +43,34 @@ async function getDirectorySize(dirPath: string): Promise<number> {
 
 async function scanDirectories(initialPath: string): Promise<void> {
   try {
-    const entries = await fs.readdir(initialPath, { withFileTypes: true });
+    const entries: Dirent[] = await fs.readdir(initialPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(initialPath, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === "node_modules") {
-          const size = await getDirectorySize(fullPath);
-          globalTotal += size;
-          const sizeMB = bytesToMB(size);
-          console.log(`Trovato: ${fullPath} - Dimensione: ${sizeMB} MB`);
-          paths.push(fullPath);
-        } else {
-          // Scansione ricorsiva nelle sottocartelle solo se non è una cartella node_modules
-          await scanDirectories(fullPath);
-        }
+
+      if (!entry.isDirectory()) {
+        continue;
       }
+
+      if (relativePathToIgnore.some((ignorePath) => entry.name == ignorePath)) {
+        //console.log(`Ignorato (RP): ${fullPath}`);
+        continue;
+      }
+
+      if (fullPathToIgnore.some((ignorePath) => fullPath == ignorePath)) {
+        //console.log(`Ignorato (FP): ${fullPath}`);
+        continue;
+      }
+
+      if (entry.name === "node_modules") {
+        const size = await getDirectorySize(fullPath);
+        globalTotal += size;
+        const sizeMB = bytesToMB(size);
+        console.log(`Trovato: ${fullPath} - Dimensione: ${sizeMB} MB`);
+        paths.push(fullPath);
+        continue;
+      }
+
+      await scanDirectories(fullPath);
     }
   } catch (err) {
     console.error(`Errore durante la scansione della directory ${initialPath}: ${err}`);

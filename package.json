@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "clean-exp": "bun run index.ts C:/Users/binel/workspace/experiments"
+    "do": "bun run index.ts C:/Users/binel/workspace/experiments"
   },
   "devDependencies": {
     "@types/bun": "latest"
